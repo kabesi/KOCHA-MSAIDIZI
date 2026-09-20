@@ -1,0 +1,10 @@
+{
+  "name": "Remix Kocha Msaidizi",
+  "description": "A comprehensive soccer team management app for tracking squads, practices, matches, and attendance.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

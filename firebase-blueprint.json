@@ -1,0 +1,158 @@
+{
+  "entities": {
+    "Team": {
+      "title": "Team",
+      "description": "A soccer team.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "coachIds": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["name"]
+    },
+    "Player": {
+      "title": "Player",
+      "description": "A member of the soccer squad.",
+      "type": "object",
+      "properties": {
+        "teamId": { "type": "string" },
+        "name": { "type": "string", "description": "Full name of the player" },
+        "phone": { "type": "string", "description": "Phone number for contact" },
+        "position": { "type": "string", "description": "Primary playing position" },
+        "number": { "type": "integer", "description": "Jersey number" },
+        "age": { "type": "integer", "description": "Player age" },
+        "preferredFoot": { "type": "string", "enum": ["Right", "Left", "Both"], "description": "Preferred kicking foot" },
+        "weight": { "type": "string", "description": "Player weight (e.g. 72 kg)" },
+        "height": { "type": "string", "description": "Player height (e.g. 178 cm)" },
+        "occupation": { "type": "string", "description": "Player occupation" },
+        "coachInsights": { "type": "string", "description": "Coach technical and tactical evaluation notes" },
+        "photoUrl": { "type": "string", "description": "Player profile photo URL" }
+      },
+      "required": ["name", "phone", "teamId"]
+    },
+    "Practice": {
+      "title": "Practice",
+      "description": "A team training session.",
+      "type": "object",
+      "properties": {
+        "teamId": { "type": "string" },
+        "date": { "type": "string", "format": "date-time", "description": "When the practice occurs" },
+        "title": { "type": "string", "description": "Title of the session" },
+        "description": { "type": "string", "description": "General notes for the session" },
+        "warmup": { "type": "array", "items": { "$ref": "Drill" } },
+        "mainBody": { "type": "array", "items": { "$ref": "Drill" } },
+        "finalGame": { "type": "array", "items": { "$ref": "Drill" } },
+        "coolDown": { "type": "array", "items": { "$ref": "Drill" } },
+        "attendees": { "type": "array", "items": { "type": "string" }, "description": "List of player IDs who attended" },
+        "squadPhotoUrl": { "type": "string", "description": "URL of the squad photo taken at the practice" }
+      },
+      "required": ["date", "title", "teamId"]
+    },
+    "Drill": {
+      "title": "Drill",
+      "description": "A training drill.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "imageUrl": { "type": "string" }
+      }
+    },
+    "Match": {
+      "title": "Match",
+      "description": "A competitive game.",
+      "type": "object",
+      "properties": {
+        "teamId": { "type": "string" },
+        "date": { "type": "string", "format": "date-time", "description": "When the match occurs" },
+        "opponent": { "type": "string", "description": "The team being played" },
+        "homeTeamName": { "type": "string" },
+        "awayTeamName": { "type": "string" },
+        "location": { "type": "string", "description": "Where the match is held" },
+        "matchType": { "type": "string", "enum": ["league", "friendly"], "description": "Whether match is a league match or friendly" },
+        "leagueId": { "type": "string", "description": "ID of the league if matchType is league" },
+        "leagueName": { "type": "string", "description": "Name of the league" },
+        "groupName": { "type": "string" },
+        "stage": { "type": "string" },
+        "matchNumber": { "type": "string" },
+        "fixtureRound": { "type": "string" },
+        "homePlaceholder": { "type": "string" },
+        "awayPlaceholder": { "type": "string" },
+        "homeResolvedTeam": { "type": "string" },
+        "awayResolvedTeam": { "type": "string" },
+        "score": { "type": "string", "description": "Final score (e.g., 2-1 or 2-2 (4-3 pens))" },
+        "penaltyScore": { "type": "string" },
+        "penaltyWinner": { "type": "string" },
+        "status": { "type": "string" },
+        "attendees": { "type": "array", "items": { "type": "string" }, "description": "List of player IDs who attended" },
+        "teamPhotoUrl": { "type": "string", "description": "URL of the team photo taken at the match" },
+        "lineup": {
+          "type": "object",
+          "properties": {
+            "formation": { "type": "string" },
+            "startingXI": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "playerId": { "type": "string" },
+                  "position": { "type": "string" },
+                  "x": { "type": "number" },
+                  "y": { "type": "number" }
+                }
+              }
+            },
+            "substitutes": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      },
+      "required": ["date", "opponent", "teamId"]
+    },
+    "League": {
+      "title": "League",
+      "description": "A soccer league competition.",
+      "type": "object",
+      "properties": {
+        "teamId": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "User": {
+      "title": "User",
+      "description": "A user of the application.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "coach", "data_user"] },
+        "teamIds": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["email"]
+    },
+    "DrillLibrary": {
+      "title": "Drill Library",
+      "description": "A reusable training drill.",
+      "type": "object",
+      "properties": {
+        "teamId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "category": { "type": "string" }
+      },
+      "required": ["title", "description"]
+    }
+  },
+  "firestore": {
+    "/teams": { "schema": "Team", "description": "Collection of teams" },
+    "/players": { "schema": "Player", "description": "Collection of squad members" },
+    "/practices": { "schema": "Practice", "description": "Collection of training sessions" },
+    "/matches": { "schema": "Match", "description": "Collection of games" },
+    "/leagues": { "schema": "League", "description": "Collection of league competitions" },
+    "/users": { "schema": "User", "description": "Application users" },
+    "/drills": { "schema": "DrillLibrary", "description": "Reusable training drills" }
+  }
+}

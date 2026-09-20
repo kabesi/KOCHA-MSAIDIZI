@@ -1,0 +1,172 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: players
+    // Fields: name (string), phone (string), position (string), number (int)
+    //
+    // Collection: practices
+    // Fields: date (timestamp), title (string), description (string), drills (list of maps)
+    //
+    // Collection: matches
+    // Fields: date (timestamp), opponent (string), location (string), score (string), attendees (list of strings), teamPhotoUrl (string)
+    //
+    // Collection: users
+    // Fields: email (string), displayName (string), role (string)
+    //
+    // Collection: drills
+    // Fields: title (string), description (string), imageUrl (string), category (string)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (
+          (request.auth.token.email == "kabesimadoshi5@gmail.com" && request.auth.token.email_verified == true) ||
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+        );
+    }
+
+    function isDataUser() {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'data_user';
+    }
+
+    function isCoach() {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'coach';
+    }
+
+    function canAccessTeam(teamId) {
+      return isAdmin() || isDataUser() || 
+        (isCoach() && 
+         exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         teamId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('teamIds', []));
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidPlayer(data) {
+      return data.keys().hasAll(['name', 'phone', 'teamId']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 200 &&
+             data.phone is string && data.phone.size() > 0 && data.phone.size() < 50 &&
+             data.teamId is string && data.teamId.size() > 0 && data.teamId.size() < 100;
+    }
+
+    function isValidPractice(data) {
+      return data.keys().hasAll(['date', 'title', 'teamId']) &&
+             data.date is timestamp &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 500 &&
+             data.teamId is string && data.teamId.size() > 0 && data.teamId.size() < 100 &&
+             (!('warmup' in data) || data.warmup is list) &&
+             (!('mainBody' in data) || data.mainBody is list) &&
+             (!('finalGame' in data) || data.finalGame is list) &&
+             (!('coolDown' in data) || data.coolDown is list);
+    }
+
+    function isValidMatch(data) {
+      return data.keys().hasAll(['date', 'opponent', 'teamId']) &&
+             data.date is timestamp &&
+             data.opponent is string && data.opponent.size() > 0 && data.opponent.size() < 500 &&
+             data.teamId is string && data.teamId.size() > 0 && data.teamId.size() < 100;
+    }
+
+    function isValidLeague(data) {
+      return data.keys().hasAll(['name']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 200 &&
+             (!('description' in data) || (data.description is string && data.description.size() < 1000)) &&
+             (!('teamId' in data) || data.teamId == null || (data.teamId is string && data.teamId.size() < 100));
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['email', 'displayName', 'role']) &&
+             data.email is string && data.email.size() > 0 && data.email.size() < 200 &&
+             data.displayName is string && data.displayName.size() > 0 && data.displayName.size() < 200 &&
+             data.role in ['admin', 'coach', 'data_user'];
+    }
+
+    function isValidDrill(data) {
+      return data.keys().hasAll(['title', 'description']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 500 &&
+             data.description is string && data.description.size() > 0 && data.description.size() < 10000 &&
+             (!('teamId' in data) || data.teamId == null || (data.teamId is string && data.teamId.size() < 100));
+    }
+
+    function isValidTeam(data) {
+      return data.keys().hasAll(['name']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 200;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /test/{docId} {
+      allow read: if isAuthenticated();
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if (isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == resource.data.role || isAdmin())) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /teams/{teamId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /players/{playerId} {
+      allow read: if canAccessTeam(resource.data.teamId);
+      allow create: if canAccessTeam(request.resource.data.teamId) && !isDataUser();
+      allow update: if canAccessTeam(resource.data.teamId) && canAccessTeam(request.resource.data.teamId) && !isDataUser() && isValidPlayer(request.resource.data);
+      allow delete: if canAccessTeam(resource.data.teamId) && !isDataUser();
+    }
+
+    match /practices/{practiceId} {
+      allow read: if canAccessTeam(resource.data.teamId);
+      allow create: if canAccessTeam(request.resource.data.teamId) && !isDataUser();
+      allow update: if canAccessTeam(resource.data.teamId) && canAccessTeam(request.resource.data.teamId) && !isDataUser() && isValidPractice(request.resource.data);
+      allow delete: if canAccessTeam(resource.data.teamId) && !isDataUser();
+    }
+
+    match /matches/{matchId} {
+      allow read: if isAuthenticated();
+      allow create: if (isAdmin() || canAccessTeam(request.resource.data.teamId)) && !isDataUser() && isValidMatch(request.resource.data);
+      allow update: if (isAdmin() || canAccessTeam(resource.data.teamId)) && !isDataUser() && isValidMatch(request.resource.data);
+      allow delete: if (isAdmin() || canAccessTeam(resource.data.teamId)) && !isDataUser();
+    }
+
+    match /leagues/{leagueId} {
+      allow read: if isAuthenticated();
+      allow create, update: if (isAdmin() || (isAuthenticated() && !isDataUser())) && isValidLeague(request.resource.data);
+      allow delete: if isAdmin() || (isAuthenticated() && !isDataUser());
+    }
+
+    match /drills/{drillId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && !isDataUser() && isValidDrill(request.resource.data);
+      allow delete: if isAuthenticated() && !isDataUser();
+    }
+  }
+}
