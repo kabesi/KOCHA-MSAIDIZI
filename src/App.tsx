@@ -17,6 +17,8 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import { PWAInstallButton } from './components/PWAInstallButton';
+import { OfflineIndicator } from './components/OfflineIndicator';
 
 // --- Preset Drill Images & SVG Fallback ---
 const DEFAULT_DRILL_SVG = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect width="400" height="300" fill="%23065f46"/><rect x="20" y="20" width="360" height="260" fill="none" stroke="%2334d399" stroke-width="2" opacity="0.6"/><line x1="200" y1="20" x2="200" y2="280" stroke="%2334d399" stroke-width="2" opacity="0.6"/><circle cx="200" cy="150" r="40" fill="none" stroke="%2334d399" stroke-width="2" opacity="0.6"/><circle cx="200" cy="150" r="4" fill="%2334d399" opacity="0.8"/><rect x="20" y="80" width="60" height="140" fill="none" stroke="%2334d399" stroke-width="2" opacity="0.6"/><rect x="320" y="80" width="60" height="140" fill="none" stroke="%2334d399" stroke-width="2" opacity="0.6"/><text x="200" y="260" font-family="sans-serif" font-size="14" font-weight="bold" fill="%23a7f3d0" text-anchor="middle">SOCCER TACTICAL DRILL</text></svg>`;
@@ -268,11 +270,58 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-stone-50 text-stone-900 font-sans">
-        {/* Navigation */}
-        <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-200 px-6 py-4 z-50 md:top-0 md:bottom-auto md:border-t-0 md:border-b">
+      <div className="min-h-[100dvh] bg-stone-50 text-stone-900 font-sans flex flex-col antialiased">
+        {/* Network Offline Indicator */}
+        <OfflineIndicator />
+
+        {/* Mobile Top Header (Sticky / Fixed) */}
+        <header className="md:hidden fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-md border-b border-stone-200 z-40 px-3 py-2.5 pt-safe flex items-center justify-between shadow-2xs">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Trophy className="text-emerald-600 w-5 h-5" />
+              <span className="font-black text-sm italic tracking-tight uppercase">Kocha</span>
+            </div>
+
+            {teams.length > 0 && (
+              <div className="relative flex items-center bg-stone-100 hover:bg-stone-200/80 px-2 py-1 rounded-xl text-xs font-bold text-stone-800 transition-colors max-w-[130px] sm:max-w-[180px]">
+                <Building2 size={13} className="text-stone-400 shrink-0 mr-1" />
+                <select 
+                  value={activeTeamId || ''} 
+                  onChange={(e) => setActiveTeamId(e.target.value)}
+                  className="bg-transparent text-xs font-bold focus:outline-none cursor-pointer truncate w-full appearance-none pr-3"
+                  title="Switch Active Team"
+                >
+                  {teams.map(team => (
+                    <option key={team.id} value={team.id}>{team.name}</option>
+                  ))}
+                </select>
+                <ChevronDown size={11} className="text-stone-400 pointer-events-none absolute right-1.5" />
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <PWAInstallButton variant="compact" />
+
+            <div className="flex items-center gap-1 pl-1 border-l border-stone-200">
+              <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 font-black text-xs flex items-center justify-center uppercase" title={`${profile?.displayName} (${profile?.role})`}>
+                {profile?.displayName?.charAt(0) || 'C'}
+              </div>
+              <button 
+                onClick={() => signOut(auth)}
+                className="p-1.5 text-stone-400 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition-colors"
+                title="Sign Out"
+              >
+                <LogOut size={15} />
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* Desktop Navigation (Top Bar) */}
+        <nav className="hidden md:block fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-md border-b border-stone-200 px-6 py-3.5 z-50">
           <div className="max-w-5xl mx-auto flex justify-between items-center">
-            <div className="hidden md:flex items-center gap-4 font-bold text-xl tracking-tight">
+            <div className="flex items-center gap-4 font-bold text-xl tracking-tight">
               <div className="flex items-center gap-2">
                 <Trophy className="text-emerald-600" />
                 <span>KochaMsaidizi</span>
@@ -294,49 +343,51 @@ export default function App() {
               )}
             </div>
             
-            <div className="flex gap-6 md:gap-10 mx-auto md:mx-0">
+            <div className="flex gap-8">
               <NavButton 
                 active={activeTab === 'squad'} 
                 onClick={() => setActiveTab('squad')}
-                icon={<Users size={20} />}
+                icon={<Users size={18} />}
                 label="Squad"
               />
               <NavButton 
                 active={activeTab === 'practices'} 
                 onClick={() => setActiveTab('practices')}
-                icon={<Dumbbell size={20} />}
+                icon={<Dumbbell size={18} />}
                 label="Practices"
               />
               <NavButton 
                 active={activeTab === 'drills'} 
                 onClick={() => setActiveTab('drills')}
-                icon={<ClipboardList size={20} />}
+                icon={<ClipboardList size={18} />}
                 label="Drills"
               />
               <NavButton 
                 active={activeTab === 'matches'} 
                 onClick={() => setActiveTab('matches')}
-                icon={<Trophy size={20} />}
+                icon={<Trophy size={18} />}
                 label="Matches"
               />
               {profile?.role === 'admin' && (
                 <NavButton 
                   active={activeTab === 'admin'} 
                   onClick={() => setActiveTab('admin')}
-                  icon={<Shield size={20} />}
+                  icon={<Shield size={18} />}
                   label="Admin"
                 />
               )}
             </div>
 
-            <div className="hidden md:flex items-center gap-4">
-              <div className="text-right">
-                <p className="text-xs font-bold text-stone-900">{profile?.displayName}</p>
+            <div className="flex items-center gap-3">
+              <PWAInstallButton variant="compact" />
+              
+              <div className="text-right pl-2 border-l border-stone-200">
+                <p className="text-xs font-bold text-stone-900 truncate max-w-[120px]">{profile?.displayName}</p>
                 <p className="text-[10px] text-stone-400 uppercase tracking-widest font-black">{profile?.role}</p>
               </div>
               <button 
                 onClick={() => signOut(auth)}
-                className="p-2 text-stone-400 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition-all"
+                className="p-2 text-stone-400 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition-all cursor-pointer"
                 title="Sign Out"
               >
                 <LogOut size={18} />
@@ -345,30 +396,68 @@ export default function App() {
           </div>
         </nav>
 
+        {/* Mobile Dock Navigation (Bottom) */}
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-stone-200 px-1 pt-1.5 pb-safe z-50 shadow-lg">
+          <div className={`grid ${profile?.role === 'admin' ? 'grid-cols-5' : 'grid-cols-4'} gap-0.5 max-w-md mx-auto items-center`}>
+            <NavButton 
+              active={activeTab === 'squad'} 
+              onClick={() => setActiveTab('squad')}
+              icon={<Users size={18} />}
+              label="Squad"
+            />
+            <NavButton 
+              active={activeTab === 'practices'} 
+              onClick={() => setActiveTab('practices')}
+              icon={<Dumbbell size={18} />}
+              label="Practices"
+            />
+            <NavButton 
+              active={activeTab === 'drills'} 
+              onClick={() => setActiveTab('drills')}
+              icon={<ClipboardList size={18} />}
+              label="Drills"
+            />
+            <NavButton 
+              active={activeTab === 'matches'} 
+              onClick={() => setActiveTab('matches')}
+              icon={<Trophy size={18} />}
+              label="Matches"
+            />
+            {profile?.role === 'admin' && (
+              <NavButton 
+                active={activeTab === 'admin'} 
+                onClick={() => setActiveTab('admin')}
+                icon={<Shield size={18} />}
+                label="Admin"
+              />
+            )}
+          </div>
+        </nav>
+
         {/* Content */}
-        <main className="max-w-5xl mx-auto px-4 pt-8 pb-32 md:pt-24 md:pb-12">
+        <main className="flex-1 w-full max-w-5xl mx-auto px-3.5 sm:px-6 pt-16 pb-28 md:pt-24 md:pb-12">
           {!activeTeamId && profile?.role !== 'admin' ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="w-20 h-20 bg-stone-100 rounded-full flex items-center justify-center mb-6">
-                <Building2 size={40} className="text-stone-300" />
+            <div className="flex flex-col items-center justify-center py-16 text-center px-4">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-stone-100 rounded-full flex items-center justify-center mb-5">
+                <Building2 size={36} className="text-stone-300" />
               </div>
-              <h2 className="text-2xl font-bold text-stone-900 mb-2">No Team Assigned</h2>
-              <p className="text-stone-500 max-w-sm">
+              <h2 className="text-xl sm:text-2xl font-bold text-stone-900 mb-2">No Team Assigned</h2>
+              <p className="text-stone-500 text-xs sm:text-sm max-w-sm">
                 You haven't been assigned to any teams yet. Please contact an administrator to get started.
               </p>
             </div>
           ) : !activeTeamId && profile?.role === 'admin' && activeTab !== 'admin' ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="w-20 h-20 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mb-6">
-                <Building2 size={40} />
+            <div className="flex flex-col items-center justify-center py-16 text-center px-4">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mb-5">
+                <Building2 size={36} />
               </div>
-              <h2 className="text-2xl font-bold text-stone-900 mb-2">No Teams Created Yet</h2>
-              <p className="text-stone-500 max-w-sm mb-6">
+              <h2 className="text-xl sm:text-2xl font-bold text-stone-900 mb-2">No Teams Created Yet</h2>
+              <p className="text-stone-500 text-xs sm:text-sm max-w-sm mb-6">
                 Welcome to KochaMsaidizi! As an administrator, navigate to the Admin panel to create your first team and squad.
               </p>
               <button
                 onClick={() => setActiveTab('admin')}
-                className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-md transition-all flex items-center gap-2"
+                className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-md transition-all flex items-center gap-2 cursor-pointer text-sm"
               >
                 <Shield size={18} />
                 <span>Open Admin Panel</span>
@@ -393,11 +482,24 @@ function NavButton({ active, onClick, icon, label }: { active: boolean, onClick:
   return (
     <button 
       onClick={onClick}
-      className={`relative flex flex-col md:flex-row items-center gap-1 md:gap-2 transition-colors ${active ? 'text-emerald-600' : 'text-stone-400 hover:text-stone-600'}`}
+      className={`relative flex flex-col md:flex-row items-center justify-center gap-0.5 md:gap-2 py-1.5 px-1 md:py-1 rounded-xl transition-all cursor-pointer min-h-[44px] ${
+        active 
+          ? 'text-emerald-700 font-bold bg-emerald-50/70 md:bg-transparent' 
+          : 'text-stone-400 hover:text-stone-700 hover:bg-stone-50 md:hover:bg-transparent'
+      }`}
     >
-      {icon}
-      <span className="text-[10px] md:text-sm font-semibold uppercase tracking-wider">{label}</span>
-      {active && <motion.div layoutId="nav-underline" className="hidden md:block absolute -bottom-4 left-0 right-0 h-0.5 bg-emerald-600" />}
+      <div className={`transition-transform ${active ? 'scale-110' : ''}`}>
+        {icon}
+      </div>
+      <span className="text-[10px] md:text-sm uppercase tracking-wider font-extrabold truncate max-w-full">
+        {label}
+      </span>
+      {active && (
+        <motion.div 
+          layoutId="nav-underline" 
+          className="hidden md:block absolute -bottom-3.5 left-0 right-0 h-0.5 bg-emerald-600 rounded-full" 
+        />
+      )}
     </button>
   );
 }
@@ -428,8 +530,16 @@ function LoginView() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-stone-900 text-white p-6 overflow-hidden relative">
-      <div className="absolute inset-0 opacity-20">
+    <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-stone-900 text-white p-4 sm:p-6 overflow-hidden relative">
+      {/* Offline Alert */}
+      <OfflineIndicator />
+
+      {/* Top right Install prompt */}
+      <div className="absolute top-4 right-4 z-20">
+        <PWAInstallButton variant="compact" />
+      </div>
+
+      <div className="absolute inset-0 opacity-20 pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-500 rounded-full blur-[120px]" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500 rounded-full blur-[120px]" />
       </div>
@@ -437,21 +547,21 @@ function LoginView() {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative z-10 text-center max-w-md"
+        className="relative z-10 text-center max-w-md w-full px-2"
       >
-        <div className="w-20 h-20 bg-emerald-500 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-emerald-500/20 rotate-12">
-          <Trophy size={40} className="text-white -rotate-12" />
+        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-emerald-500 rounded-3xl flex items-center justify-center mx-auto mb-6 sm:mb-8 shadow-2xl shadow-emerald-500/20 rotate-12">
+          <Trophy size={36} className="text-white -rotate-12" />
         </div>
-        <h1 className="text-5xl font-black tracking-tighter mb-4 uppercase italic">KochaMsaidizi</h1>
-        <p className="text-stone-400 text-lg mb-12 leading-relaxed">
+        <h1 className="text-3xl sm:text-5xl font-black tracking-tighter mb-3 uppercase italic">KochaMsaidizi</h1>
+        <p className="text-stone-400 text-sm sm:text-lg mb-8 sm:mb-12 leading-relaxed max-w-sm mx-auto">
           The ultimate command center for your soccer team. Manage players, drills, and match day glory.
         </p>
         
-        <div className="space-y-4">
+        <div className="space-y-4 w-full">
           <button 
             onClick={handleLogin}
             disabled={isLoggingIn}
-            className="group w-full flex items-center justify-center gap-4 bg-white text-stone-900 px-8 py-4 rounded-2xl font-bold text-lg hover:bg-emerald-50 transition-all active:scale-95 shadow-xl disabled:opacity-70 disabled:cursor-not-allowed"
+            className="group w-full flex items-center justify-center gap-3 bg-white text-stone-900 px-6 py-3.5 sm:py-4 rounded-2xl font-bold text-base sm:text-lg hover:bg-emerald-50 transition-all active:scale-95 shadow-xl disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
           >
             {isLoggingIn ? (
               <Loader2 size={20} className="animate-spin text-emerald-600" />
@@ -468,7 +578,7 @@ function LoginView() {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm font-medium"
+                className="p-3.5 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs sm:text-sm font-medium"
               >
                 {error}
               </motion.div>
